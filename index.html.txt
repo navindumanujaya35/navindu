@@ -1,0 +1,1072 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navindu Motors — Garage Management System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        workshop: {
+                            950: '#090d16',
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                            amber: '#f59e0b',
+                            amberHover: '#d97706',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for clean workshop aesthetic */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Hide number input arrows */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-workshop-900 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="bg-amber-500 text-workshop-950 p-2 rounded-lg shadow-sm flex items-center justify-center">
+                        <i class="ph-bold ph-wrench text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg tracking-tight leading-none text-white">NAVINDU MOTORS</h1>
+                        <p class="text-[11px] text-slate-400 font-medium tracking-wider uppercase mt-0.5">Workshop & Service Center</p>
+                    </div>
+                </div>
+
+                <!-- Desktop Navigation Tabs -->
+                <nav class="hidden md:flex items-center space-x-1" id="desktop-nav">
+                    <button onclick="switchTab('dashboard')" data-tab="dashboard" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 bg-slate-800 text-amber-400">
+                        <i class="ph ph-squares-four text-lg"></i> Dashboard
+                    </button>
+                    <button onclick="switchTab('vehicles')" data-tab="vehicles" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 text-slate-300 hover:bg-slate-800 hover:text-white">
+                        <i class="ph ph-car text-lg"></i> Vehicles & Customers
+                    </button>
+                    <button onclick="switchTab('inventory')" data-tab="inventory" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 text-slate-300 hover:bg-slate-800 hover:text-white">
+                        <i class="ph ph-package text-lg"></i> Spare Parts
+                    </button>
+                    <button onclick="switchTab('jobs')" data-tab="jobs" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 text-slate-300 hover:bg-slate-800 hover:text-white">
+                        <i class="ph ph-clipboard-text text-lg"></i> Job Cards & Reminders
+                    </button>
+                </nav>
+
+                <!-- Data & Settings Menu -->
+                <div class="relative">
+                    <button onclick="toggleHeaderMenu()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-medium border border-slate-700">
+                        <i class="ph ph-database text-base text-amber-400"></i>
+                        <span class="hidden sm:inline">Backup / Reset</span>
+                        <i class="ph ph-caret-down text-xs"></i>
+                    </button>
+                    <!-- Dropdown -->
+                    <div id="header-dropdown" class="hidden absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 text-slate-700 z-40">
+                        <button onclick="exportDataJSON()" class="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 flex items-center gap-2.5 font-medium">
+                            <i class="ph ph-download-simple text-lg text-slate-500"></i> Export Backup (JSON)
+                        </button>
+                        <div class="border-t border-slate-100 my-1"></div>
+                        <button onclick="openResetConfirm()" class="w-full text-left px-4 py-2.5 text-sm hover:bg-red-50 text-red-600 flex items-center gap-2.5 font-medium">
+                            <i class="ph ph-arrow-counter-clockwise text-lg"></i> Reset Demo Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Bottom/Secondary Tab Bar -->
+        <div class="md:hidden border-t border-slate-800 bg-workshop-950 px-2 py-1.5 grid grid-cols-4 gap-1" id="mobile-nav">
+            <button onclick="switchTab('dashboard')" data-tab="dashboard" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-lg text-[11px] font-medium text-amber-400 bg-slate-800/80">
+                <i class="ph ph-squares-four text-lg mb-0.5"></i> Dashboard
+            </button>
+            <button onclick="switchTab('vehicles')" data-tab="vehicles" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-lg text-[11px] font-medium text-slate-400">
+                <i class="ph ph-car text-lg mb-0.5"></i> Vehicles
+            </button>
+            <button onclick="switchTab('inventory')" data-tab="inventory" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-lg text-[11px] font-medium text-slate-400">
+                <i class="ph ph-package text-lg mb-0.5"></i> Parts
+            </button>
+            <button onclick="switchTab('jobs')" data-tab="jobs" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-lg text-[11px] font-medium text-slate-400">
+                <i class="ph ph-clipboard-text text-lg mb-0.5"></i> Jobs
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ==================== TAB 1: DASHBOARD ==================== -->
+        <section id="tab-dashboard" class="tab-section space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Workshop Overview</h2>
+                    <p class="text-sm text-slate-500">Live summary of vehicles, spare parts stock, and service reminders.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="switchTab('jobs'); openJobModal();" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 text-sm">
+                        <i class="ph-bold ph-plus"></i> New Job Card
+                    </button>
+                    <button onclick="switchTab('vehicles'); openVehicleModal();" class="bg-workshop-900 hover:bg-slate-800 text-white font-medium px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 text-sm">
+                        <i class="ph-bold ph-car"></i> Add Vehicle
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-start justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Registered Vehicles</p>
+                        <p id="stat-total-vehicles" class="text-3xl font-bold text-slate-900 mt-1">0</p>
+                        <p class="text-xs text-slate-500 mt-1">Active customer database</p>
+                    </div>
+                    <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                        <i class="ph-fill ph-car-profile text-2xl"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-start justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Completed Jobs</p>
+                        <p id="stat-total-jobs" class="text-3xl font-bold text-slate-900 mt-1">0</p>
+                        <p id="stat-total-revenue" class="text-xs font-medium text-emerald-600 mt-1">LKR 0 Revenue</p>
+                    </div>
+                    <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                        <i class="ph-fill ph-wrench text-2xl"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-start justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Low Stock Alerts</p>
+                        <p id="stat-low-stock" class="text-3xl font-bold text-red-600 mt-1">0</p>
+                        <p class="text-xs text-slate-500 mt-1">Items need reordering</p>
+                    </div>
+                    <div class="p-3 bg-red-50 text-red-600 rounded-xl">
+                        <i class="ph-fill ph-warning-circle text-2xl"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-start justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Service Reminders</p>
+                        <p id="stat-reminders" class="text-3xl font-bold text-amber-600 mt-1">0</p>
+                        <p class="text-xs text-slate-500 mt-1">Vehicles due for service</p>
+                    </div>
+                    <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                        <i class="ph-fill ph-bell-ringing text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Two Column Actionable Lists -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Urgent Service Reminders Preview -->
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
+                    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <div class="flex items-center gap-2">
+                            <i class="ph-fill ph-whatsapp-logo text-emerald-600 text-xl"></i>
+                            <h3 class="font-bold text-slate-800">Due Service Reminders</h3>
+                        </div>
+                        <button onclick="switchTab('jobs')" class="text-xs font-semibold text-amber-600 hover:text-amber-700">View All &rarr;</button>
+                    </div>
+                    <div id="dash-reminders-list" class="divide-y divide-slate-100 flex-1">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+                <!-- Low Stock Inventory Preview -->
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
+                    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <div class="flex items-center gap-2">
+                            <i class="ph-fill ph-warning text-red-500 text-xl"></i>
+                            <h3 class="font-bold text-slate-800">Low Stock Spare Parts</h3>
+                        </div>
+                        <button onclick="switchTab('inventory')" class="text-xs font-semibold text-amber-600 hover:text-amber-700">Manage Stock &rarr;</button>
+                    </div>
+                    <div id="dash-low-stock-list" class="divide-y divide-slate-100 flex-1">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 2: CUSTOMERS & VEHICLES ==================== -->
+        <section id="tab-vehicles" class="tab-section hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Vehicles & Customer Base</h2>
+                    <p class="text-sm text-slate-500">Search by license plate (e.g., WP CAA-4521) or owner name.</p>
+                </div>
+                <button onclick="openVehicleModal()" class="bg-workshop-900 hover:bg-slate-800 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-sm">
+                    <i class="ph-bold ph-plus"></i> Register Vehicle
+                </button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-3">
+                <i class="ph ph-magnifying-glass text-slate-400 text-xl ml-2"></i>
+                <input type="text" id="vehicle-search" oninput="renderVehicles()" placeholder="Search Vehicle No (e.g. WP CAA-4521), Owner Name, or Model..." class="w-full text-sm bg-transparent border-none focus:outline-none text-slate-800 placeholder-slate-400">
+                <button onclick="document.getElementById('vehicle-search').value=''; renderVehicles();" class="text-xs text-slate-400 hover:text-slate-600 px-2">Clear</button>
+            </div>
+
+            <!-- Vehicles Grid -->
+            <div id="vehicles-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Populated via JS -->
+            </div>
+        </section>
+
+        <!-- ==================== TAB 3: SPARE PARTS INVENTORY ==================== -->
+        <section id="tab-inventory" class="tab-section hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Spare Parts Inventory</h2>
+                    <p class="text-sm text-slate-500">Manage garage stock levels, part codes, and LKR pricing.</p>
+                </div>
+                <button onclick="openPartModal()" class="bg-workshop-900 hover:bg-slate-800 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-sm">
+                    <i class="ph-bold ph-plus"></i> Add Spare Part
+                </button>
+            </div>
+
+            <!-- Filter & Search Bar -->
+            <div class="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row items-center gap-3">
+                <div class="flex items-center gap-2 w-full flex-1">
+                    <i class="ph ph-magnifying-glass text-slate-400 text-xl ml-2"></i>
+                    <input type="text" id="part-search" oninput="renderInventory()" placeholder="Search Part Code, Name, or Category..." class="w-full text-sm bg-transparent border-none focus:outline-none text-slate-800 placeholder-slate-400">
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+                    <select id="part-filter" onchange="renderInventory()" class="w-full sm:w-auto text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:border-amber-500">
+                        <option value="all">All Stock Items</option>
+                        <option value="low">Low Stock Only</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Responsive Inventory Table -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                <th class="py-3.5 px-4">Part Code</th>
+                                <th class="py-3.5 px-4">Item Name & Category</th>
+                                <th class="py-3.5 px-4 text-right">Unit Price (LKR)</th>
+                                <th class="py-3.5 px-4 text-center">In Stock</th>
+                                <th class="py-3.5 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-table-body" class="divide-y divide-slate-100 text-sm">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 4: JOB CARDS & REMINDERS ==================== -->
+        <section id="tab-jobs" class="tab-section hidden space-y-8">
+            
+            <!-- Sub-section A: Automated Service Reminders -->
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                            <i class="ph-fill ph-bell-ringing text-amber-500"></i> Vehicle Service Reminders
+                        </h2>
+                        <p class="text-sm text-slate-500">Send 1-click WhatsApp reminders for upcoming or overdue services.</p>
+                    </div>
+                </div>
+                <div id="reminders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+
+            <hr class="border-slate-200">
+
+            <!-- Sub-section B: Job Cards & Billing -->
+            <div class="space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                            <i class="ph-fill ph-receipt text-workshop-900"></i> Job Cards & Invoices
+                        </h2>
+                        <p class="text-sm text-slate-500">Create repair bills, auto-deduct spare parts, and send invoices via WhatsApp.</p>
+                    </div>
+                    <button onclick="openJobModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-sm">
+                        <i class="ph-bold ph-plus"></i> Create New Job Card
+                    </button>
+                </div>
+
+                <!-- Job Cards List -->
+                <div id="jobs-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- 1. Add/Edit Vehicle Modal -->
+    <div id="vehicle-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
+            <div class="px-6 py-4 bg-workshop-900 text-white flex items-center justify-between">
+                <h3 id="vehicle-modal-title" class="font-bold text-lg">Register New Vehicle</h3>
+                <button onclick="closeModal('vehicle-modal')" class="text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
+            </div>
+            <form id="vehicle-form" onsubmit="saveVehicle(event)" class="p-6 space-y-4">
+                <input type="hidden" id="v-id">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Vehicle Number *</label>
+                        <input type="text" id="v-plate" required placeholder="e.g. WP CAA-4521" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-mono uppercase focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Make & Model *</label>
+                        <input type="text" id="v-model" required placeholder="e.g. Toyota Axio Hybrid" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Owner Name *</label>
+                        <input type="text" id="v-owner" required placeholder="e.g. Kasun Perera" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">WhatsApp / Phone *</label>
+                        <input type="tel" id="v-phone" required placeholder="e.g. 0771234567" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Current Mileage (km)</label>
+                        <input type="number" id="v-mileage" required placeholder="65000" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Next Service (km)</label>
+                        <input type="number" id="v-next-km" required placeholder="70000" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Next Service Date</label>
+                        <input type="date" id="v-next-date" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+                <div class="pt-3 flex justify-end gap-2 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('vehicle-modal')" class="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-sm">Save Vehicle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Vehicle Service History Modal -->
+    <div id="history-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[85vh]">
+            <div class="px-6 py-4 bg-workshop-900 text-white flex items-center justify-between">
+                <div>
+                    <h3 id="history-modal-title" class="font-bold text-lg">Service History</h3>
+                    <p id="history-modal-sub" class="text-xs text-slate-400"></p>
+                </div>
+                <button onclick="closeModal('history-modal')" class="text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
+            </div>
+            <div id="history-modal-body" class="p-6 overflow-y-auto space-y-3 flex-1">
+                <!-- Populated via JS -->
+            </div>
+            <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button onclick="closeModal('history-modal')" class="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-200 hover:bg-slate-300 text-slate-800">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Add/Edit Spare Part Modal -->
+    <div id="part-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+            <div class="px-6 py-4 bg-workshop-900 text-white flex items-center justify-between">
+                <h3 id="part-modal-title" class="font-bold text-lg">Add Spare Part</h3>
+                <button onclick="closeModal('part-modal')" class="text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
+            </div>
+            <form id="part-form" onsubmit="savePart(event)" class="p-6 space-y-4">
+                <input type="hidden" id="p-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Part Code *</label>
+                        <input type="text" id="p-code" required placeholder="e.g. OIL-0W20" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-mono uppercase focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Category *</label>
+                        <select id="p-category" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                            <option value="Lubricants & Fluids">Lubricants & Fluids</option>
+                            <option value="Filters">Filters</option>
+                            <option value="Brakes">Brakes</option>
+                            <option value="Engine & Ignition">Engine & Ignition</option>
+                            <option value="Suspension & Steering">Suspension & Steering</option>
+                            <option value="Electrical">Electrical</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Part Name *</label>
+                    <input type="text" id="p-name" required placeholder="e.g. Toyota Genuine 0W-20 Engine Oil (4L)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Price (LKR) *</label>
+                        <input type="number" id="p-price" required min="0" placeholder="14500" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Stock Qty *</label>
+                        <input type="number" id="p-stock" required min="0" placeholder="12" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Low Alert *</label>
+                        <input type="number" id="p-min" required min="1" value="5" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+                <div class="pt-3 flex justify-end gap-2 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('part-modal')" class="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-sm">Save Part</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. Create Job Card / Invoice Modal -->
+    <div id="job-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+            <div class="px-6 py-4 bg-workshop-900 text-white flex items-center justify-between">
+                <h3 class="font-bold text-lg">Create Job Card & Invoice</h3>
+                <button onclick="closeModal('job-modal')" class="text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
+            </div>
+            <form id="job-form" onsubmit="saveJobCard(event)" class="p-6 overflow-y-auto space-y-5 flex-1">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Select Vehicle *</label>
+                        <select id="j-vehicle" required onchange="onJobVehicleSelect()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500 bg-white">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Odometer Reading (km) *</label>
+                        <input type="number" id="j-mileage" required placeholder="Current km" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Service / Repair Description *</label>
+                    <input type="text" id="j-notes" required placeholder="e.g. Full Service, Engine Oil & Filter Change, Brake Inspection" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                </div>
+
+                <!-- Spare Parts Selector -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                    <label class="block text-xs font-bold text-slate-700 uppercase">Add Spare Parts (Auto-deducts stock)</label>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <select id="j-part-select" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-amber-500">
+                            <!-- Populated via JS -->
+                        </select>
+                        <input type="number" id="j-part-qty" value="1" min="1" class="w-full sm:w-20 px-3 py-2 rounded-xl border border-slate-300 text-sm text-center focus:outline-none focus:border-amber-500" placeholder="Qty">
+                        <button type="button" onclick="addPartToJob()" class="bg-workshop-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-medium transition">Add</button>
+                    </div>
+                    
+                    <!-- Selected Parts List -->
+                    <div id="j-selected-parts" class="divide-y divide-slate-200 text-sm">
+                        <p class="text-xs text-slate-400 italic py-2">No spare parts added yet.</p>
+                    </div>
+                </div>
+
+                <!-- Labour & Next Service Update -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Labour Charges (LKR) *</label>
+                        <input type="number" id="j-labour" required min="0" value="3500" oninput="calculateJobTotal()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Next Service (km)</label>
+                        <input type="number" id="j-next-km" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Next Service Date</label>
+                        <input type="date" id="j-next-date" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+
+                <!-- Invoice Summary Box -->
+                <div class="bg-workshop-900 text-white p-4 rounded-xl flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase font-semibold">Total Invoice Amount</p>
+                        <p class="text-xs text-slate-400 mt-0.5" id="j-breakdown">Parts: LKR 0 + Labour: LKR 3,500</p>
+                    </div>
+                    <div class="text-right">
+                        <p id="j-total-display" class="text-2xl font-bold text-amber-400 font-mono">LKR 3,500</p>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('job-modal')" class="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-sm flex items-center gap-2">
+                        <i class="ph-bold ph-check-circle"></i> Complete & Save Invoice
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 5. Reset Confirmation Modal (No browser confirm()) -->
+    <div id="reset-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-center space-y-4">
+            <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+                <i class="ph-bold ph-warning text-2xl"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-lg text-slate-900">Reset Demo Data?</h3>
+                <p class="text-sm text-slate-500 mt-1">This will restore the default Sri Lankan sample vehicles, spare parts, and job cards. Any custom entries will be overwritten.</p>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeModal('reset-modal')" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700">Cancel</button>
+                <button onclick="confirmResetDemoData()" class="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white">Yes, Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== JAVASCRIPT APPLICATION LOGIC ==================== -->
+    <script>
+        // Storage Keys
+        const STORAGE_KEY = 'navindu_motors_gms_v1';
+
+        // Helper: Get relative date YYYY-MM-DD
+        function getRelativeDate(daysOffset) {
+            const d = new Date();
+            d.setDate(d.getDate() + daysOffset);
+            return d.toISOString().split('T')[0];
+        }
+
+        // Realistic Sri Lankan Demo Data
+        const DEFAULT_DATA = {
+            vehicles: [
+                {
+                    id: 'v1',
+                    plate: 'WP CAA-4521',
+                    model: 'Toyota Axio Hybrid (NKE165)',
+                    owner: 'Kasun Perera',
+                    phone: '0771234567',
+                    mileage: 84200,
+                    nextServiceKm: 85000,
+                    nextServiceDate: getRelativeDate(4) // Due in 4 days
+                },
+                {
+                    id: 'v2',
+                    plate: 'CP KG-8890',
+                    model: 'Suzuki Wagon R Stingray',
+                    owner: 'Nimali Jayawardena',
+                    phone: '0719876543',
+                    mileage: 52100,
+                    nextServiceKm: 52000,
+                    nextServiceDate: getRelativeDate(-3) // Overdue by 3 days
+                },
+                {
+                    id: 'v3',
+                    plate: 'WP CBB-1904',
+                    model: 'Honda Vezel RS Sensing',
+                    owner: 'Chaminda Bandara',
+                    phone: '0765544332',
+                    mileage: 68500,
+                    nextServiceKm: 73500,
+                    nextServiceDate: getRelativeDate(75) // Good condition
+                },
+                {
+                    id: 'v4',
+                    plate: 'SP KH-3312',
+                    model: 'Toyota Prius 3rd Gen',
+                    owner: 'Dinesh Silva',
+                    phone: '0778899001',
+                    mileage: 114800,
+                    nextServiceKm: 115000,
+                    nextServiceDate: getRelativeDate(10) // Due soon
+                }
+            ],
+            parts: [
+                { id: 'p1', code: 'OIL-0W20', name: 'Toyota Genuine 0W-20 Full Synthetic Oil (4L)', category: 'Lubricants & Fluids', price: 16500, stock: 8, minStock: 4 },
+                { id: 'p2', code: 'OIL-5W30', name: 'Mobil 1 5W-30 Engine Oil (4L)', category: 'Lubricants & Fluids', price: 15800, stock: 3, minStock: 5 },
+                { id: 'p3', code: 'FLT-TOY01', name: 'Toyota/Suzuki Genuine Oil Filter', category: 'Filters', price: 2450, stock: 18, minStock: 6 },
+                { id: 'p4', code: 'FLT-AIR04', name: 'Hybrid Engine Air Filter Element', category: 'Filters', price: 3800, stock: 2, minStock: 4 },
+                { id: 'p5', code: 'BRK-PAD-F', name: 'Front Ceramic Brake Pads Set (Axio/Prius)', category: 'Brakes', price: 9500, stock: 6, minStock: 3 },
+                { id: 'p6', code: 'SPK-IRID', name: 'NGK Iridium Spark Plug (Single)', category: 'Engine & Ignition', price: 4200, stock: 4, minStock: 8 },
+                { id: 'p7', code: 'COOL-LLC', name: 'Super Long Life Pink Coolant (2L)', category: 'Lubricants & Fluids', price: 3200, stock: 10, minStock: 4 }
+            ],
+            jobs: [
+                {
+                    id: 'JOB-1001',
+                    date: getRelativeDate(-15),
+                    vehicleId: 'v3',
+                    plate: 'WP CBB-1904',
+                    model: 'Honda Vezel RS Sensing',
+                    owner: 'Chaminda Bandara',
+                    phone: '0765544332',
+                    mileage: 68500,
+                    notes: 'Full Hybrid Service, Engine Oil & Oil Filter Replacement',
+                    parts: [
+                        { partId: 'p1', name: 'Toyota Genuine 0W-20 Full Synthetic Oil (4L)', qty: 1, price: 16500 },
+                        { partId: 'p3', name: 'Toyota/Suzuki Genuine Oil Filter', qty: 1, price: 2450 }
+                    ],
+                    labour: 4500,
+                    total: 23450
+                },
+                {
+                    id: 'JOB-1002',
+                    date: getRelativeDate(-45),
+                    vehicleId: 'v1',
+                    plate: 'WP CAA-4521',
+                    model: 'Toyota Axio Hybrid (NKE165)',
+                    owner: 'Kasun Perera',
+                    phone: '0771234567',
+                    mileage: 80000,
+                    notes: '80,000km Major Service & Front Brake Pad Replacement',
+                    parts: [
+                        { partId: 'p1', name: 'Toyota Genuine 0W-20 Full Synthetic Oil (4L)', qty: 1, price: 16500 },
+                        { partId: 'p3', name: 'Toyota/Suzuki Genuine Oil Filter', qty: 1, price: 2450 },
+                        { partId: 'p5', name: 'Front Ceramic Brake Pads Set (Axio/Prius)', qty: 1, price: 9500 }
+                    ],
+                    labour: 6000,
+                    total: 34450
+                }
+            ]
+        };
+
+        // App State
+        let appData = { vehicles: [], parts: [], jobs: [] };
+        let currentJobParts = [];
+
+        // Initialize App
+        function initApp() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    appData = JSON.parse(saved);
+                } catch (e) {
+                    appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+                    saveData();
+                }
+            } else {
+                appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+                saveData();
+            }
+            refreshAllViews();
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+            refreshAllViews();
+        }
+
+        function refreshAllViews() {
+            renderDashboard();
+            renderVehicles();
+            renderInventory();
+            renderJobsAndReminders();
+        }
+
+        // Format Currency (LKR)
+        function formatLKR(amount) {
+            return 'LKR ' + Number(amount || 0).toLocaleString('en-LK');
+        }
+
+        // Format Sri Lankan Phone Number for WhatsApp (947XXXXXXXX)
+        function formatWhatsAppNumber(phone) {
+            let cleaned = phone.replace(/\D/g, '');
+            if (cleaned.startsWith('0')) {
+                cleaned = '94' + cleaned.substring(1);
+            } else if (!cleaned.startsWith('94')) {
+                cleaned = '94' + cleaned;
+            }
+            return cleaned;
+        }
+
+        // Toast Notification
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-600' : (type === 'warning' ? 'bg-amber-600' : 'bg-workshop-900');
+            const icon = type === 'error' ? 'ph-warning-circle' : 'ph-check-circle';
+            
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 text-sm font-medium transform transition-all duration-300 translate-y-2 opacity-0 pointer-events-auto border border-white/10`;
+            toast.innerHTML = `<i class="ph-fill ${icon} text-lg text-amber-400"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Navigation Tab Switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+            // Update Desktop & Mobile Nav Buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const isTarget = btn.getAttribute('data-tab') === tabName;
+                if (btn.closest('#desktop-nav')) {
+                    btn.className = isTarget 
+                        ? 'nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 bg-slate-800 text-amber-400'
+                        : 'nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 text-slate-300 hover:bg-slate-800 hover:text-white';
+                } else {
+                    btn.className = isTarget
+                        ? 'nav-btn flex flex-col items-center justify-center py-1.5 rounded-lg text-[11px] font-medium text-amber-400 bg-slate-800/80'
+                        : 'nav-btn flex flex-col items-center justify-center py-1.5 rounded-lg text-[11px] font-medium text-slate-400';
+                }
+            });
+        }
+
+        // Header Dropdown Toggle
+        function toggleHeaderMenu() {
+            document.getElementById('header-dropdown').classList.toggle('hidden');
+        }
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('.relative')) {
+                document.getElementById('header-dropdown').classList.add('hidden');
+            }
+        });
+
+        // Export & Reset Functions
+        function exportDataJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `Navindu_Motors_Backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast('Backup JSON downloaded successfully!');
+        }
+
+        function openResetConfirm() {
+            document.getElementById('header-dropdown').classList.add('hidden');
+            document.getElementById('reset-modal').classList.remove('hidden');
+        }
+
+        function confirmResetDemoData() {
+            appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+            saveData();
+            closeModal('reset-modal');
+            showToast('Demo data restored to defaults.');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // Helper: Check if vehicle is due for service (within 14 days or within 500km)
+        function getServiceStatus(vehicle) {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const dueDate = new Date(vehicle.nextServiceDate);
+            const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+            const kmRemaining = vehicle.nextServiceKm - vehicle.mileage;
+
+            if (diffDays < 0 || kmRemaining <= 0) {
+                return { status: 'overdue', label: 'Overdue', badgeClass: 'bg-red-100 text-red-700 border-red-200', diffDays, kmRemaining };
+            } else if (diffDays <= 14 || kmRemaining <= 1000) {
+                return { status: 'due_soon', label: 'Due Soon', badgeClass: 'bg-amber-100 text-amber-800 border-amber-200', diffDays, kmRemaining };
+            }
+            return { status: 'ok', label: 'Scheduled', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200', diffDays, kmRemaining };
+        }
+
+        // ==================== RENDER DASHBOARD ====================
+        function renderDashboard() {
+            document.getElementById('stat-total-vehicles').textContent = appData.vehicles.length;
+            document.getElementById('stat-total-jobs').textContent = appData.jobs.length;
+            
+            const totalRev = appData.jobs.reduce((sum, j) => sum + Number(j.total), 0);
+            document.getElementById('stat-total-revenue').textContent = `${formatLKR(totalRev)} Total Billed`;
+
+            const lowStockParts = appData.parts.filter(p => p.stock <= p.minStock);
+            document.getElementById('stat-low-stock').textContent = lowStockParts.length;
+
+            const dueVehicles = appData.vehicles.filter(v => getServiceStatus(v).status !== 'ok');
+            document.getElementById('stat-reminders').textContent = dueVehicles.length;
+
+            // Render Dashboard Reminders List
+            const remList = document.getElementById('dash-reminders-list');
+            if (dueVehicles.length === 0) {
+                remList.innerHTML = `<div class="p-6 text-center text-sm text-slate-400">All customer vehicles are up to date!</div>`;
+            } else {
+                remList.innerHTML = dueVehicles.slice(0, 4).map(v => {
+                    const st = getServiceStatus(v);
+                    return `
+                        <div class="p-4 flex items-center justify-between gap-3 hover:bg-slate-50 transition">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono font-bold text-sm text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">${v.plate}</span>
+                                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full border ${st.badgeClass}">${st.label}</span>
+                                </div>
+                                <p class="text-xs text-slate-600 font-medium mt-1">${v.owner} • ${v.model}</p>
+                                <p class="text-[11px] text-slate-400">Due: ${v.nextServiceDate} or ${v.nextServiceKm.toLocaleString()} km</p>
+                            </div>
+                            <button onclick="sendWhatsAppReminder('${v.id}')" class="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 shadow-sm transition">
+                                <i class="ph-bold ph-whatsapp-logo text-base"></i> Remind
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Render Dashboard Low Stock List
+            const stockList = document.getElementById('dash-low-stock-list');
+            if (lowStockParts.length === 0) {
+                stockList.innerHTML = `<div class="p-6 text-center text-sm text-slate-400">All spare parts are well stocked!</div>`;
+            } else {
+                stockList.innerHTML = lowStockParts.slice(0, 4).map(p => `
+                    <div class="p-4 flex items-center justify-between gap-3 hover:bg-slate-50 transition">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono text-xs font-semibold text-slate-500">${p.code}</span>
+                                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Only ${p.stock} left</span>
+                            </div>
+                            <p class="text-sm font-semibold text-slate-800 mt-0.5">${p.name}</p>
+                        </div>
+                        <button onclick="quickAdjustStock('${p.id}', 5)" class="shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold px-3 py-2 rounded-xl transition">
+                            +5 Restock
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // ==================== RENDER & MANAGE VEHICLES ====================
+        function renderVehicles() {
+            const query = document.getElementById('vehicle-search').value.toLowerCase().trim();
+            const grid = document.getElementById('vehicles-grid');
+
+            const filtered = appData.vehicles.filter(v => 
+                v.plate.toLowerCase().includes(query) || 
+                v.owner.toLowerCase().includes(query) || 
+                v.model.toLowerCase().includes(query) ||
+                v.phone.includes(query)
+            );
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full bg-white p-10 rounded-2xl border border-slate-200 text-center text-slate-400 text-sm">No vehicles found matching "${query}".</div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(v => {
+                const st = getServiceStatus(v);
+                const jobCount = appData.jobs.filter(j => j.vehicleId === v.id).length;
+
+                return `
+                    <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 flex flex-col justify-between hover:border-slate-300 transition">
+                        <div>
+                            <div class="flex items-start justify-between gap-2">
+                                <span class="font-mono font-bold text-base tracking-wide bg-amber-400/20 text-slate-900 border border-amber-400/50 px-2.5 py-1 rounded-lg">
+                                    ${v.plate}
+                                </span>
+                                <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full border ${st.badgeClass}">
+                                    ${st.label}
+                                </span>
+                            </div>
+                            <h3 class="font-bold text-slate-900 text-base mt-3">${v.model}</h3>
+                            
+                            <div class="mt-3 space-y-1.5 text-xs text-slate-600">
+                                <div class="flex items-center gap-2">
+                                    <i class="ph-fill ph-user text-slate-400 text-sm"></i>
+                                    <span class="font-medium text-slate-800">${v.owner}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="ph-fill ph-phone text-slate-400 text-sm"></i>
+                                    <span>${v.phone}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="ph-fill ph-gauge text-slate-400 text-sm"></i>
+                                    <span>Current: <strong>${Number(v.mileage).toLocaleString()} km</strong> • Next: ${Number(v.nextServiceKm).toLocaleString()} km</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                            <button onclick="openHistoryModal('${v.id}')" class="text-xs font-semibold text-slate-700 hover:text-amber-600 flex items-center gap-1 py-1.5 px-2 rounded-lg hover:bg-slate-50 transition">
+                                <i class="ph-bold ph-clock-counter-clockwise"></i> History (${jobCount})
+                            </button>
+                            <div class="flex items-center gap-1">
+                                <button onclick="openVehicleModal('${v.id}')" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition" title="Edit Vehicle">
+                                    <i class="ph-bold ph-pencil-simple"></i>
+                                </button>
+                                <button onclick="openJobModalForVehicle('${v.id}')" class="bg-workshop-900 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                                    + Job Card
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openVehicleModal(vehicleId = null) {
+            const form = document.getElementById('vehicle-form');
+            form.reset();
+            if (vehicleId) {
+                const v = appData.vehicles.find(item => item.id === vehicleId);
+                document.getElementById('vehicle-modal-title').textContent = 'Edit Vehicle Details';
+                document.getElementById('v-id').value = v.id;
+                document.getElementById('v-plate').value = v.plate;
+                document.getElementById('v-model').value = v.model;
+                document.getElementById('v-owner').value = v.owner;
+                document.getElementById('v-phone').value = v.phone;
+                document.getElementById('v-mileage').value = v.mileage;
+                document.getElementById('v-next-km').value = v.nextServiceKm;
+                document.getElementById('v-next-date').value = v.nextServiceDate;
+            } else {
+                document.getElementById('vehicle-modal-title').textContent = 'Register New Vehicle';
+                document.getElementById('v-id').value = '';
+                document.getElementById('v-next-date').value = getRelativeDate(90);
+            }
+            document.getElementById('vehicle-modal').classList.remove('hidden');
+        }
+
+        function saveVehicle(e) {
+            e.preventDefault();
+            const id = document.getElementById('v-id').value;
+            const vehicleObj = {
+                id: id || 'v_' + Date.now(),
+                plate: document.getElementById('v-plate').value.toUpperCase().trim(),
+                model: document.getElementById('v-model').value.trim(),
+                owner: document.getElementById('v-owner').value.trim(),
+                phone: document.getElementById('v-phone').value.trim(),
+                mileage: Number(document.getElementById('v-mileage').value),
+                nextServiceKm: Number(document.getElementById('v-next-km').value),
+                nextServiceDate: document.getElementById('v-next-date').value
+            };
+
+            if (id) {
+                const idx = appData.vehicles.findIndex(v => v.id === id);
+                appData.vehicles[idx] = vehicleObj;
+                showToast('Vehicle details updated!');
+            } else {
+                appData.vehicles.unshift(vehicleObj);
+                showToast('New vehicle registered!');
+            }
+            saveData();
+            closeModal('vehicle-modal');
+        }
+
+        function openHistoryModal(vehicleId) {
+            const v = appData.vehicles.find(item => item.id === vehicleId);
+            const vJobs = appData.jobs.filter(j => j.vehicleId === vehicleId);
+
+            document.getElementById('history-modal-title').textContent = `${v.plate} — Service Log`;
+            document.getElementById('history-modal-sub').textContent = `${v.model} • Owner: ${v.owner} (${v.phone})`;
+
+            const body = document.getElementById('history-modal-body');
+            if (vJobs.length === 0) {
+                body.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm">No completed service records found for this vehicle yet.</div>`;
+            } else {
+                body.innerHTML = vJobs.map(j => `
+                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="font-mono text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200">${j.id} • ${j.date}</span>
+                            <span class="font-bold text-sm text-emerald-700">${formatLKR(j.total)}</span>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-800">${j.notes}</p>
+                        <p class="text-xs text-slate-500">Mileage at service: <strong>${Number(j.mileage).toLocaleString()} km</strong></p>
+                        ${j.parts.length > 0 ? `
+                            <div class="text-xs text-slate-600 pt-1 border-t border-slate-200/60">
+                                <span class="font-semibold">Parts Used:</span> ${j.parts.map(p => `${p.name} (x${p.qty})`).join(', ')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            }
+            document.getElementById('history-modal').classList.remove('hidden');
+        }
+
+        // ==================== RENDER & MANAGE SPARE PARTS ====================
+        function renderInventory() {
+            const query = document.getElementById('part-search').value.toLowerCase().trim();
+            const filter = document.getElementById('part-filter').value;
+            const tbody = document.getElementById('inventory-table-body');
+
+            const filtered = appData.parts.filter(p => {
+                const matchesSearch = p.code.toLowerCase().includes(query) || p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query);
+                const matchesFilter = filter === 'all' || (filter === 'low' && p.stock <= p.minStock);
+                return matchesSearch && matchesFilter;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400">No spare parts found.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(p => {
+                const isLow = p.stock <= p.minStock;
+                return `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3.5 px-4 font-mono font-semibold text-xs text-slate-700">${p.code}</td>
+                        <td class="py-3.5 px-4">
+                            <p class="font-semibold text-slate-900">${p.name}</p>
+                            <span class="text-xs text-slate-400">${p.category}</span>
+                        </td>
+                        <td class="py-3.5 px-4 text-right font-mono font-medium text-slate-800">${formatLKR(p.price)}</td>
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="quickAdjustStock('${p.id}', -1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center transition">-</button>
+                                <span class="w-10 text-center font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}">${p.stock}</span>
+                                <button onclick="quickAdjustStock('${p.id}', 1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center transition">+</button>
+                            </div>
+                            ${isLow ? `<div class="text-center mt-1"><span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-red-100 text-red-700">Low Stock</span></div>` : ''}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <button onclick="openPartModal('${p.id}')" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition" title="Edit Part">
+                                <i class="ph-bold ph-pencil-simple"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function quickAdjustStock(partId, delta) {
+            const part = appData.parts.find(p => p.id === partId);
+            if (!part) return;
+            if (part.stock + delta < 0) {
+                showToast('Stock cannot be negative!', 'error');
+                return;
+            }
+            part.stock += delta;
+            saveData();
+        }
+
+        function openPartModal(partI
